@@ -3,6 +3,12 @@ __author__ = 'Ron Li'
 
 
 class Sha256:
+    """ A class to calculate SHA256 """
+
+    """
+    Initialize table of round constants:
+    first 32 bits of the fractional parts of the cube roots of the first 64 primes 2..311
+    """
     k = (0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
         0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
         0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
@@ -20,27 +26,32 @@ class Sha256:
         0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
         0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2)
 
-    h = (0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
-        0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19)
+    """
+    Initialize variables: 
+    first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19
+    """
+    h = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+        0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]
 
     def __init__(self):
         self.data_len = 0
         self.bit_len = 0
         self.data_b = [0] * 64
-        self.buffer_w = [0] * len(self.h)
 
     def sha_init(self):
-        for i in range(len(self.h)):
-            self.buffer_w[i] = (self.h[i])
+        """ Nothing to be initialized in algorithm level so far """
+        pass
 
     def rotr(self, x, y):
+        """ Rigth rotate operation """
         return ((x >> y) | (x << (32-y))) & 0xFFFFFFFF
 
-    def sha_transform(self):
-        print("\nsha_transform\n\n")
-        print([hex(x) for x in self.data_b])
+    def sha_process(self):
+        """ Process the message in successive 512-bit chunks """
 
+        # Break chunk into sixteen 32-bit big-endian words m[0..15]
         m = [0] * 64
+        # Extend the sixteen 32-bit words into sixty-four 32-bit words
         j = 0
         for i in range(16):
             m[i] = self.data_b[j]<<24 | self.data_b[j+1]<<16 | self.data_b[j+2]<<8 | self.data_b[j+3]
@@ -51,7 +62,8 @@ class Sha256:
             sig1 = self.rotr(m[i-2], 17) ^ self.rotr(m[i-2], 19) ^ (m[i-2] >> 10)
             m[i] = (sig1 + m[i-7] + sig0 + m[i-16]) & 0xFFFFFFFF
 
-        a,b,c,d,e,f,g,h = self.buffer_w
+        # Initialize hash value for this chunk
+        a,b,c,d,e,f,g,h = self.h
 
         for i in range(64):
             ep0 = (self.rotr(a, 2) ^ self.rotr(a, 13) ^ self.rotr(a, 22)) & 0xFFFFFFFF
@@ -69,31 +81,36 @@ class Sha256:
             b = a
             a = (t1 + t2) & 0xFFFFFFFF
 
-        self.buffer_w[0] = (self.buffer_w[0] + a) & 0xFFFFFFFF
-        self.buffer_w[1] = (self.buffer_w[1] + b) & 0xFFFFFFFF
-        self.buffer_w[2] = (self.buffer_w[2] + c) & 0xFFFFFFFF
-        self.buffer_w[3] = (self.buffer_w[3] + d) & 0xFFFFFFFF
-        self.buffer_w[4] = (self.buffer_w[4] + e) & 0xFFFFFFFF
-        self.buffer_w[5] = (self.buffer_w[5] + f) & 0xFFFFFFFF
-        self.buffer_w[6] = (self.buffer_w[6] + g) & 0xFFFFFFFF
-        self.buffer_w[7] = (self.buffer_w[7] + h) & 0xFFFFFFFF
+        # Add this chunk's hash to result so far
+        self.h[0] = (self.h[0] + a) & 0xFFFFFFFF
+        self.h[1] = (self.h[1] + b) & 0xFFFFFFFF
+        self.h[2] = (self.h[2] + c) & 0xFFFFFFFF
+        self.h[3] = (self.h[3] + d) & 0xFFFFFFFF
+        self.h[4] = (self.h[4] + e) & 0xFFFFFFFF
+        self.h[5] = (self.h[5] + f) & 0xFFFFFFFF
+        self.h[6] = (self.h[6] + g) & 0xFFFFFFFF
+        self.h[7] = (self.h[7] + h) & 0xFFFFFFFF
 
     def sha_update(self, input, len):
         """ Update new data block """
+
+        # Convert string input to bytearray, if needed
         if isinstance(input, str):
             print("Convert str to bytes\n")
             input = bytearray(input.encode('ascii'))
-
+        
+        # Break message into 512-bit chunks
         for i in range(len):
             self.data_b[self.data_len] = input[i]
             self.data_len += 1
             if self.data_len == 64:
-                self.sha_transform()
+                self.sha_process()
                 self.bit_len += 512
                 self.data_len = 0
 
     def sha_digest(self):
         """ Calculate the digest """
+
         i = self.data_len
 
         # Pad whatever data is left in the buffer
@@ -110,10 +127,10 @@ class Sha256:
                 self.data_b[i] = 0x00
                 i += 1
 
-            self.sha_transform()
+            self.sha_process()
             self.data_b[:56] = [0 for x in self.data_b[:56]]
 
-        # Append to the padding the total message's length in bits and transform
+        # Append length of message in bits, as 64-bit big-endian integer
         self.bit_len += self.data_len * 8
 
         self.data_b[63] = self.bit_len & 0xFF
@@ -125,20 +142,24 @@ class Sha256:
         self.data_b[57] = (self.bit_len >> 48)& 0xFF
         self.data_b[56] = (self.bit_len >> 56)& 0xFF
 
-        self.sha_transform()
+        # Final transform to get final digest
+        self.sha_process()
 
-        return self.buffer_w
+        return self.h
 
 
 def uint_test(input):
     """ Unit test for any giving inputs """
+
     s = Sha256()
-    s.sha_init()
     s.sha_update(input, len(input))
     return s.sha_digest()
 
 def main():
-    """ Run tests on several unit tests """
+    """ 
+    Run tests on several unit tests 
+    From https://www.di-mgt.com.au/sha_testvectors.html
+    """
     test = 'abc'
     digest = uint_test(test)
     print([hex(x) for x in digest])
@@ -158,8 +179,5 @@ def main():
 
 if __name__=="__main__":
     main()
-
-
-
 
     
