@@ -2,8 +2,8 @@
 __author__ = 'Ron Li'
 
 
-class Sha256:
-    """ A class to calculate SHA256 """
+class Sha224:
+    """ A class to calculate SHA224 """
 
     """
     Initialize table of round constants:
@@ -28,10 +28,10 @@ class Sha256:
 
     """
     Initialize variables: 
-    first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19
+    The second 32 bits of the fractional parts of the square roots of the 9th through 16th primes 23..53
     """
-    h =[0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
-        0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]
+    h = [0xc1059ed8, 0x367cd507, 0x3070dd17, 0xf70e5939,
+         0xffc00b31, 0x68581511, 0x64f98fa7, 0xbefa4fa4]
 
     def __init__(self):
         self.data_len = 0
@@ -145,13 +145,13 @@ class Sha256:
         # Final transform to get final digest
         self.sha_process()
 
-        return self.h
+        return self.h[:7]
 
 
 def uint_test(input):
     """ Unit test for any giving inputs """
 
-    s = Sha256()
+    s = Sha224()
     s.sha_update(input, len(input))
     return s.sha_digest()
 
